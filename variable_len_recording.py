@@ -62,6 +62,7 @@ def main():
     channels = st.sidebar.number_input(label="Channels", value=1)
     rate = st.sidebar.number_input(label="Rate", value=16000)
     chunk = st.sidebar.number_input(label="Chunk", value=1024)
+    placeholder = st.empty()
     stop=st.button("Stop Recording")
     if stop:
         if "stop_event" in st.session_state:
@@ -70,8 +71,9 @@ def main():
     transcribe = st.button("Transcribe")
     if transcribe:
         transcription = transcribe_audio(audio_filename)
-        st.write("Transcription:")
-        st.write(transcription)
+        with placeholder.container():
+            st.write("Transcription:")
+            st.write(transcription)
     record= st.sidebar.button("Record Audio")
     if record:
         stop_event = threading.Event()
