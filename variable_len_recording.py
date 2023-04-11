@@ -62,32 +62,30 @@ def main():
     channels = st.sidebar.number_input(label="Channels", value=1)
     rate = st.sidebar.number_input(label="Rate", value=16000)
     chunk = st.sidebar.number_input(label="Chunk", value=1024)
+    stop=st.button("Stop Recording")
+    if stop:
+        if "stop_event" in st.session_state:
+            stop_recording(st.session_state["stop_event"])
+
+    transcribe = st.button("Transcribe")
+    if transcribe:
+        transcription = transcribe_audio(audio_filename)
+        st.write("Transcription:")
+        st.write(transcription)
     record= st.sidebar.button("Record Audio")
     if record:
         stop_event = threading.Event()
         st.session_state["stop_event"]=stop_event
         audio_queue = queue.Queue()
-
         record_thread = threading.Thread(target=record_audio,
                                          args=(channels, rate,
                                                chunk, audio_filename,
                                                stop_event, audio_queue))
         record_thread.start()
-
         #input("Press the return key to stop recording...\n")
         #stop_event.set()
         record_thread.join()
 
-    stop=st.sidebar.button("Stop Recording")
-    if stop:
-        if "stop_event" in st.session_state:
-            stop_recording(st.session_state["stop_event"])
-
-    transcribe = st.sidebar.button("Transcribe")
-    if transcribe:
-        transcription = transcribe_audio(audio_filename)
-        st.write("Transcription:")
-        st.write(transcription)
 
 if __name__ == "__main__":
     main()
