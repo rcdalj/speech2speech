@@ -6,6 +6,7 @@ import threading
 import sys
 import streamlit as st
 import queue
+from gtts import gTTS
 
 
 def get_api_key():
@@ -83,6 +84,19 @@ def translate_text(text):
 def callback():
     st.write(st.session_state["chosen_language"])
 
+def read_the_translation():
+    myobj = gTTS(text=st.session_state.translation,
+                 lang=st.session_state.chosen_language, slow=False)
+
+    # Saving the converted audio in a mp3 file named
+    # welcome
+    try:
+        myobj.save("welcome.mp3")
+    except Exception as e:
+        pass
+
+    # Playing the converted file
+    os.system("xdg-open  welcome.mp3")
 # Main function
 def main():
     st.set_page_config(page_title="Speech2Speech")
@@ -99,6 +113,7 @@ def main():
                                   on_change=callback, key="chosen_language")
     st.write(chosen_language)
     translate = st.button("Translate")
+    read_translation=st.button("Read Translation")
 
     if record:
         stop_event = threading.Event()
@@ -125,7 +140,11 @@ def main():
 
     if translate:
         #print(st.session_state["transcription"])
-        st.write(translate_text(st.session_state["transcription"]))
+        st.session_state.translation=translate_text(st.session_state[
+                                                  "transcription"])
+        st.write(st.session_state.translation)
 
+    if read_translation:
+        read_the_translation()
 if __name__ == "__main__":
     main()
