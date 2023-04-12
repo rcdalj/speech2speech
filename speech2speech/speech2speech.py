@@ -1,5 +1,4 @@
 import openai
-import sys
 import streamlit as st
 import os
 from gtts import gTTS
