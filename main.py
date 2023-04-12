@@ -8,7 +8,8 @@ import streamlit as st
 import queue
 from gtts import gTTS
 import configparser
-import requests
+import webbrowser
+
 
 
 def get_api_key():
@@ -64,6 +65,16 @@ def record_audio(channels, rate, chunk, filename, stop_event, audio_queue):
         wf.setsampwidth(audio.get_sample_size(FORMAT))
         wf.setframerate(rate)
         wf.writeframes(b''.join(list(audio_queue.queue)))
+
+import pyautogui
+import time
+
+def refresh_page():
+    # Send the "CTRL + R" keyboard shortcut
+    pyautogui.hotkey('ctrl', 'r')
+
+    # Wait for a short time to allow the page to refresh
+    time.sleep(1)
 
 
 def stream_record(audio_filename, channels, chunk, rate):
@@ -138,6 +149,8 @@ def main():
         placeholder1=st.empty()
         read_translation=st.button("Read Translation",
                                    use_container_width=True)
+        refresh=st.button("Refresh Page", on_click=refresh_page,
+                          use_container_width=True)
 
     if record:
         stream_record(audio_filename, channels, chunk, rate)
