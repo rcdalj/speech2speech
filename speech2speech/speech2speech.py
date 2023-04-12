@@ -1,5 +1,4 @@
 import openai
-import whisper
 import streamlit as st
 import os
 from gtts import gTTS
