@@ -7,6 +7,8 @@ import sys
 import streamlit as st
 import queue
 from gtts import gTTS
+import configparser
+import requests
 
 
 def get_api_key():
@@ -16,19 +18,30 @@ def get_api_key():
             if 'API_KEY' in line:
                 return line.split('=')[1].strip()
 
-
 openai.api_key = get_api_key()
 
+def read_config():
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+
+    audio_filename = config.get('audio', 'filename')
+    channels = config.getint('audio', 'channels')
+    rate = config.getint('audio', 'rate')
+    chunk = config.getint('audio', 'chunk')
+    return audio_filename, channels, rate, chunk
 
 def stop_recording(stop_event):
+    import numpy
     if stop_event:
         stop_event.set()
-        st.session_state["stop_event"] = None
-
+    else:
+        stop_event = threading.Event()
+        stop_event.set()
+    st.session_state.stop_event=stop_event
 
 # Record audio
 def record_audio(channels, rate, chunk, filename, stop_event, audio_queue):
-    FORMAT = pyaudio.paInt16
+    FORMAT = pyaudio.paInt32
 
     audio = pyaudio.PyAudio()
     stream = audio.open(format=FORMAT, channels=channels,
@@ -53,6 +66,19 @@ def record_audio(channels, rate, chunk, filename, stop_event, audio_queue):
         wf.writeframes(b''.join(list(audio_queue.queue)))
 
 
+def stream_record(audio_filename, channels, chunk, rate):
+    stop_event = threading.Event()
+    st.session_state.stop_event = stop_event
+    audio_queue = queue.Queue()
+    record_thread = threading.Thread(target=record_audio,
+                                     args=(channels, rate,
+                                           chunk, audio_filename,
+                                           stop_event, audio_queue))
+    record_thread.start()
+    record_thread.join()
+    st.stop()
+
+
 # Transcribe audio
 def transcribe_audio(filename):
     try:
@@ -66,23 +92,19 @@ def transcribe_audio(filename):
 def translate_text(text):
     try:
         response = openai.Completion.create(
-            engine="text-davinci-002",
+            engine="text-davinci-003",
             prompt=f"Please translate the following text into "
-                   f"{st.session_state.chosen_language}: \"{text}\"",
-            max_tokens=1000,
+                   f"'{st.session_state.chosen_language}': {text}",
+            max_tokens=1024,
             n=1,
             stop=None,
-            temperature=0.7,
+            temperature=0.5,
         )
-        # st.write(response.choices[0].text.strip())
         return response.choices[0].text.strip()
     except Exception as e:
         st.write("Error: ", e)
         return None
 
-
-def callback():
-    st.write(st.session_state["chosen_language"])
 
 def read_the_translation():
     myobj = gTTS(text=st.session_state.translation,
@@ -97,44 +119,37 @@ def read_the_translation():
 
     # Playing the converted file
     os.system("xdg-open  welcome.mp3")
+
 # Main function
 def main():
     st.set_page_config(page_title="Speech2Speech")
-    audio_filename = "recorded_audio.wav"
-    channels = st.sidebar.number_input(label="Channels", value=1)
-    rate = st.sidebar.number_input(label="Rate", value=16000)
-    chunk = st.sidebar.number_input(label="Chunk", value=1024)
-    placeholder = st.empty()
-    record= st.sidebar.button("Record Audio")
-    stop=st.button("Stop Recording")
-    transcribe = st.button("Transcribe")
-    chosen_language=st.text_input("Language to translate the "
-                                      "transcription",
-                                  on_change=callback, key="chosen_language")
-    st.write(chosen_language)
-    translate = st.button("Translate")
-    read_translation=st.button("Read Translation")
+    audio_filename, channels, rate, chunk = read_config()
+    col1, col2, col3=st.columns(3)
+    with col1:
+        record= st.button("Record Audio", use_container_width=True)
+        stop=st.button("Stop Recording", use_container_width=True)
+        transcribe = st.button("Transcribe", use_container_width=True)
+        placeholder=st.empty()
+        lang_codes = ["en", "es", "fr", "de", "it", "pt", "pt-BR", "nl", "ru",
+                  "ja", "zh", "zh-TW", "ko"]
+        st.session_state.chosen_language=st.selectbox("Target Language",
+                                                  lang_codes)
+        translate = st.button("Translate", use_container_width=True)
+        placeholder1=st.empty()
+        read_translation=st.button("Read Translation",
+                                   use_container_width=True)
 
     if record:
-        stop_event = threading.Event()
-        st.session_state["stop_event"] = stop_event
-        audio_queue = queue.Queue()
-        record_thread = threading.Thread(target=record_audio,
-                                         args=(channels, rate,
-                                               chunk, audio_filename,
-                                               stop_event, audio_queue))
-        record_thread.start()
-        record_thread.join()
-        st.stop()
+        stream_record(audio_filename, channels, chunk, rate)
 
     if stop:
-        if "stop_event" in st.session_state:
-            stop_recording(st.session_state["stop_event"])
+        # if "stop_event" in st.session_state:
+        stop_recording(st.session_state["stop_event"])
 
     if transcribe:
         transcription = transcribe_audio(audio_filename)
         st.session_state["transcription"]= transcription
-        with placeholder.container():
+        with placeholder:
             st.write("Transcription:")
             st.write(transcription)
 
@@ -142,9 +157,20 @@ def main():
         #print(st.session_state["transcription"])
         st.session_state.translation=translate_text(st.session_state[
                                                   "transcription"])
-        st.write(st.session_state.translation)
+        with placeholder:
+            st.write(f"""Transcription:\n{st.session_state.transcription}""")
+        with placeholder1:
+            st.write(f"""Translation:\n{st.session_state.translation}""")
 
     if read_translation:
         read_the_translation()
+        with placeholder:
+            st.write(f"""Transcription:\n{st.session_state.transcription}""")
+        with placeholder1:
+            st.write(f"""Translation:\n{st.session_state.translation}""")
+
+
+
+
 if __name__ == "__main__":
     main()
