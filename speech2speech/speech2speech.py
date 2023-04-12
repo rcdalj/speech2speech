@@ -14,15 +14,28 @@ import queue
 import threading
 
 
-def get_api_key():
-    with open('.password.txt', 'r') as f:
-        lines = f.readlines()
-        for line in lines:
-            if 'API_KEY' in line:
-                return line.split('=')[1].strip()
+def get_api_key() -> str:
+    """
+    Read the OpenAI API key from the environment and return it.
+
+    Returns:
+        str: The OpenAI API key.
+
+    Raises:
+        KeyError: If the API key environment variable is not found.
+        ValueError: If the API key is an empty string.
+    """
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        raise KeyError("OPENAI_API_KEY environment variable not set")
+
+    if not api_key.strip():
+        raise ValueError("OPENAI_API_KEY is empty")
+
+    return api_key.strip()
+
 
 openai.api_key = get_api_key()
-
 
 def read_config() -> Tuple[str, int, int, int]:
     """
@@ -276,7 +289,7 @@ def read_the_translation() -> None:
 
     # Save speech to MP3 file
     try:
-        myobj.save("welcome.mp3")
+        myobj.save("wwwelcome.mp3")
     except Exception as e:
         # Handle file save errors
         print(f"Error saving audio file: {e}")
@@ -284,7 +297,7 @@ def read_the_translation() -> None:
 
     # Play MP3 file
     try:
-        os.system("xdg-open welcome.mp3")
+        os.system("xdg-open wwwelcome.mp3")
     except Exception as e:
         # Handle file play errors
         print(f"Error playing audio file: {e}")
