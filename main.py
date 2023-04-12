@@ -131,13 +131,18 @@ def read_the_translation():
     # Playing the converted file
     os.system("xdg-open  welcome.mp3")
 
+def set_state():
+    st.session_state.disabled=True
 # Main function
 def main():
     st.set_page_config(page_title="Speech2Speech")
     audio_filename, channels, rate, chunk = read_config()
     col1, col2, col3=st.columns(3)
+    st.session_state.disabled=False
     with col1:
-        record= st.button("Record Audio", use_container_width=True)
+        record= st.button("Record Audio", use_container_width=True,
+                          key="record", on_click=set_state,
+                          disabled=st.session_state.disabled)
         stop=st.button("Stop Recording", use_container_width=True)
         transcribe = st.button("Transcribe", use_container_width=True)
         placeholder=st.empty()
@@ -163,24 +168,23 @@ def main():
         transcription = transcribe_audio(audio_filename)
         st.session_state["transcription"]= transcription
         with placeholder:
-            st.write("Transcription:")
-            st.write(transcription)
+            st.success(f"""Transcription:\n{st.session_state.transcription}""")
 
     if translate:
         #print(st.session_state["transcription"])
         st.session_state.translation=translate_text(st.session_state[
                                                   "transcription"])
         with placeholder:
-            st.write(f"""Transcription:\n{st.session_state.transcription}""")
+            st.success(f"""Transcription:\n{st.session_state.transcription}""")
         with placeholder1:
-            st.write(f"""Translation:\n{st.session_state.translation}""")
+            st.info(f"""Translation:\n{st.session_state.translation}""")
 
     if read_translation:
         read_the_translation()
         with placeholder:
-            st.write(f"""Transcription:\n{st.session_state.transcription}""")
+            st.success(f"""Transcription:\n{st.session_state.transcription}""")
         with placeholder1:
-            st.write(f"""Translation:\n{st.session_state.translation}""")
+            st.info(f"""Translation:\n{st.session_state.translation}""")
 
 
 
