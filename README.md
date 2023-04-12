@@ -1,4 +1,4 @@
-# speech2speech
+# Speech2Speech
 
 Speech2Speech is a Python package that performs vocal recognition of speech, followed by translation to a target language of your choice and read out loud by a high-quality voice.
 

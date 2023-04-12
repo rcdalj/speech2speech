@@ -1,4 +1,5 @@
 import openai
+import whisper
 import streamlit as st
 import os
 from gtts import gTTS
@@ -217,7 +218,7 @@ def stream_record(audio_filename: str, channels: int, chunk: int, rate: int) -> 
     st.write("Recording stopped by user")
 
 
-# Transcribe audio
+#Transcribe audio
 def transcribe_audio(filename: str) -> str:
     """Transcribes an audio file using OpenAI's API.
 
@@ -234,6 +235,7 @@ def transcribe_audio(filename: str) -> str:
     except Exception as e:
         st.error(f"Error transcribing audio: {e}")
         return ""
+
 
 
 def translate_text(text: str, target_lang: str) -> str:
