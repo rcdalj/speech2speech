@@ -1,1 +1,5 @@
 /venv/pyvenv.cfg
+/pyproject.toml
+/dist/
+/speech2speech/speech2speech.egg-info/
+/TODO.txt
