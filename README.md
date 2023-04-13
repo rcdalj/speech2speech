@@ -1,6 +1,8 @@
 # Speech2Speech
 
-Speech2Speech is a Python package that performs vocal recognition of speech, followed by translation to a target language of your choice and read out loud by a high-quality voice.
+Speech2Speech is a Python package that performs vocal recognition of 
+your speech, followed by translation to a target language of your choice, 
+which is then read out loud by a high-quality voice.
 
 As long as your speech is in one of the many languages that Chat-GPT can transcribe, you do not have to indicate the source language you are using.
 
@@ -48,7 +50,7 @@ on the "View API Keys" tab in the OpenAI dashboard. Click on the "Create new sec
    Click on "OK" to save the changes.
    
    
-Speech2Speech installation (not yet implemented)
+Speech2Speech installation
 --------------------------
 To install Speech2Speech, open your terminal and run the following command:
 
