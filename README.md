@@ -72,7 +72,8 @@ using the cd command.
 3. Type the following command in the terminal to launch Speech2Speech:
 
 
-   streamlit run speech2speech.py
+   `streamlit run speech2speech.py`
+
 
 Workflow
 ----------
