@@ -3,3 +3,4 @@
 /dist/
 /speech2speech/speech2speech.egg-info/
 /TODO.txt
+/speech2speech/logs.log
