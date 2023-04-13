@@ -11,42 +11,10 @@ import queue
 import threading
 from pydub import AudioSegment
 from pydub.playback import play
-import logging
 import os
 import sys
 import psutil
 import pyautogui
-
-
-def setup_logger(name=__name__):
-    """
-    Set up a custom logger with a console and file handler.
-
-    Args:
-        name (str): The name of the logger.
-
-    Returns:
-        logging.Logger: The configured logger object.
-    """
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
-
-    # Create handlers
-    try:
-        c_handler = logging.StreamHandler(sys.stdout)
-        f_handler = logging.FileHandler("./logs.log")
-    except (IOError, OSError) as e:
-        print(f"Error creating log handlers: {e}")
-        return None
-
-    # Add handlers to the logger
-    logger.addHandler(c_handler)
-    logger.addHandler(f_handler)
-
-    return logger
-
-logger = setup_logger()
-
 
 
 def get_api_key() -> str:
@@ -60,7 +28,6 @@ def get_api_key() -> str:
         KeyError: If the API key environment variable is not found.
         ValueError: If the API key is an empty string.
     """
-    if logging: logger.debug("get_api_key()")
     api_key = os.environ.get('OPENAI_API_KEY')
     if not api_key:
         raise KeyError("OPENAI_API_KEY environment variable not set")
@@ -147,7 +114,7 @@ def read_config() -> Tuple[str, int, int, int, str, str, str, str]:
         translation_filename = config.get('files', 'translation_filename')
         target_lang_audio_filename = config.get('files', 'target_lang_audio_filename')
         lang_codes = config.get('languages', 'lang_codes')
-        logging=config.getint('debugging', 'logging')
+        log=config.getint('debugging', 'log')
 
         if channels <= 0:
             raise ValueError("'channels' must be a positive integer.")
@@ -165,7 +132,7 @@ def read_config() -> Tuple[str, int, int, int, str, str, str, str]:
         st.session_state.target_lang_audio_filename=os.path.join("data",
                                                 target_lang_audio_filename)
         st.session_state.lang_codes=lang_codes.split(",")
-        st.session_state.logging=logging
+        st.session_state.log=log
 
 
         return source_lang_audio_filename, channels, rate, chunk, \
@@ -189,7 +156,6 @@ def stop_recording(stop_event: Optional[threading.Event] = None) -> None:
     Raises:
         TypeError: If stop_event is not None and is not a threading.Event object.
     """
-    if logging: logger.debug("stop_recording()")
     if stop_event:
         if not isinstance(stop_event, threading.Event):
             raise TypeError("stop_event must be a threading.Event object.")
@@ -219,7 +185,6 @@ def record_audio(channels: int, rate: int, chunk: int, filename: str,
         ValueError: If channels, rate, or chunk are not positive integers.
         TypeError: If stop_event is not a threading.Event object or if audio_queue is not a queue.Queue object.
     """
-    if logging: logger.debug("record_audio()")
     if not isinstance(stop_event, threading.Event):
         raise TypeError("stop_event must be a threading.Event object.")
     if not isinstance(audio_queue, queue.Queue):
@@ -266,7 +231,6 @@ def refresh_page() -> None:
             during the execution of this function, a `pyautogui.FailSafeException` is raised to
             prevent accidental execution of the function.
     """
-    if logging: logger.debug("refresh_page()")
     try:
         # Send the "CTRL + R" keyboard shortcut
         pyautogui.hotkey('ctrl', 'r')
@@ -301,7 +265,6 @@ def stream_record(source_lang_audio_filename: str, channels: int, chunk: int, ra
 
     """
     try:
-        if logging: logger.debug("stream_record()")
         stop_event = threading.Event()
         st.session_state.stop_event = stop_event
         audio_queue = queue.Queue()
@@ -339,7 +302,6 @@ def transcribe_audio() -> str:
         str: The transcribed text.
     """
     try:
-        if logging: logger.debug("transcribe_audio()")
         with open(st.session_state.source_lang_audio_filename, "rb") as audio_file:
             transcript = openai.Audio.transcribe("whisper-1", audio_file)
             with open(st.session_state.transcript_filename, "w") as f:
@@ -361,7 +323,6 @@ def translate_text(target_lang: str) -> str:
     Returns:
         str: The translated text.
     """
-    if logging: logger.debug("translate_text()")
     # Validate input
     if not target_lang:
         raise ValueError("'target_lang' argument is required.")
@@ -406,7 +367,6 @@ def read_the_translation() -> None:
     Returns:
         None.
     """
-    if logging: logger.debug("read_the_translation()")
     if not st.session_state.translation_filename:
         raise ValueError("A file with the text to be read must exist")
     if not st.session_state.target_lang:
@@ -440,7 +400,6 @@ def read_the_translation() -> None:
         return None
 
 def set_state():
-    if logging: logger.debug("set_state()")
     st.session_state.disabled=True
 
 
@@ -450,7 +409,6 @@ def main() -> None:
     Main function to run the Speech2Speech app.
     """
     try:
-        if logging: logger.debug("main()")
         st.set_page_config(page_title="Speech2Speech")
         st.header("Speech2Speech")
         source_lang_audio_filename, channels, rate, chunk, \
@@ -536,7 +494,6 @@ def handle_record(record_button: bool, source_lang_audio_filename: str, channels
         ValueError: If channels or rate are not positive integers.
         IOError: If there was an error opening the audio file.
     """
-    if logging: logger.debug("handle_record()")
     if not isinstance(channels, int) or channels <= 0:
         raise ValueError("channels must be a positive integer")
     if not isinstance(rate, int) or rate <= 0:
@@ -557,7 +514,6 @@ def handle_stop(stop_button: bool) -> None:
     Raises:
         ValueError: If stop_button is not a boolean value.
     """
-    if logging: logger.debug("handle_stop()")
     if not isinstance(stop_button, bool):
         raise ValueError("stop_button must be a boolean value")
 
@@ -581,7 +537,6 @@ def handle_transcribe(transcribe_button: bool, source_lang_audio_filename: str, 
         ValueError: If transcribe_button is not a boolean value.
         TypeError: If placeholder_1 is not a Streamlit placeholder.
     """
-    if logging: logger.debug("handle_transcribe()")
     if not isinstance(transcribe_button, bool):
         raise ValueError("transcribe_button must be a boolean value")
 
@@ -617,7 +572,6 @@ def handle_translate(translate_button: bool, target_lang: str, placeholder_1, pl
         ValueError: If translate_button is not a boolean value or if target_lang is not a string.
         TypeError: If placeholder_1 or placeholder_2 is not a Streamlit placeholder.
     """
-    if logging: logger.debug("handle_translate()")
     if not isinstance(translate_button, bool):
         raise ValueError("translate_button must be a boolean value")
 
@@ -671,7 +625,6 @@ def handle_read_translation(read_translation_button: bool, placeholder_1, placeh
         TypeError: If placeholder_1 or placeholder_2 is not a Streamlit placeholder.
         KeyError: If transcription or translation is not available in the Streamlit session state.
     """
-    if logging: logger.debug("handle_read_translation()")
     if not isinstance(read_translation_button, bool):
         raise ValueError("read_translation_button must be a boolean value")
 
