@@ -36,12 +36,15 @@ def get_api_key() -> str:
 
 openai.api_key = get_api_key()
 
-def read_config() -> Tuple[str, int, int, int]:
+def read_config() -> Tuple[str, int, int, int, str, str, str, str]:
     """
     Reads the configuration values from the 'config.ini' file.
 
     Returns:
-        A tuple containing the audio filename (str), number of channels (int), sample rate (int), and chunk size (int).
+        A tuple containing the source language audio filename (str), number of
+        channels (int), sample rate (int), and chunk size (int),
+        transcript filename (str), translation filename (str),
+        target language audio filename (str) and language codes (str)
 
     Raises:
         configparser.Error: If there is an error reading the configuration file.
@@ -51,10 +54,14 @@ def read_config() -> Tuple[str, int, int, int]:
         config = configparser.ConfigParser()
         config.read('config.ini')
 
-        audio_filename = config.get('audio', 'filename')
+        source_lang_audio_filename = config.get('audio', 'source_lang_audio_filename')
         channels = config.getint('audio', 'channels')
         rate = config.getint('audio', 'rate')
         chunk = config.getint('audio', 'chunk')
+        transcript_filename = config.get('files', 'transcript_filename')
+        translation_filename = config.get('files', 'translation_filename')
+        target_lang_audio_filename = config.get('files', 'target_lang_audio_filename')
+        lang_codes = config.get('languages', 'lang_codes')
 
         if channels <= 0:
             raise ValueError("'channels' must be a positive integer.")
@@ -63,13 +70,15 @@ def read_config() -> Tuple[str, int, int, int]:
         if chunk <= 0:
             raise ValueError("'chunk' must be a positive integer.")
 
-        return audio_filename, channels, rate, chunk
+        return source_lang_audio_filename, channels, rate, chunk, \
+            transcript_filename, translation_filename, \
+            target_lang_audio_filename, lang_codes
 
     except configparser.Error as e:
-        raise configparser.Error(f"Error reading configuration file: {e}")
+        raise configparser.Error(f"Error reading configuration file: {e.args}")
 
     except ValueError as e:
-        raise ValueError(f"Invalid configuration value: {e}")
+        raise ValueError(f"Invalid configuration value: {e.args}")
 
 
 def stop_recording(stop_event: Optional[threading.Event] = None) -> None:
@@ -177,11 +186,11 @@ import threading
 from typing import Tuple
 
 
-def stream_record(audio_filename: str, channels: int, chunk: int, rate: int) -> None:
+def stream_record(source_lang_audio_filename: str, channels: int, chunk: int, rate: int) -> None:
     """Record audio from microphone and save to file.
 
     Args:
-        audio_filename (str): Name of the output audio file.
+        source_lang_audio_filename (str): Name of the output audio file.
         channels (int): Number of audio channels.
         chunk (int): Number of audio frames per buffer.
         rate (int): Sampling rate of audio.
@@ -196,7 +205,7 @@ def stream_record(audio_filename: str, channels: int, chunk: int, rate: int) -> 
         audio_queue = queue.Queue()
         record_thread = threading.Thread(target=record_audio,
                                          args=(channels, rate,
-                                               chunk, audio_filename,
+                                               chunk, source_lang_audio_filename,
                                                stop_event, audio_queue))
         record_thread.start()
     except Exception as e:
@@ -218,18 +227,19 @@ def stream_record(audio_filename: str, channels: int, chunk: int, rate: int) -> 
 
 
 #Transcribe audio
-def transcribe_audio(filename: str) -> str:
+def transcribe_audio() -> str:
     """Transcribes an audio file using OpenAI's API.
 
     Args:
-        filename (str): The path to the audio file to transcribe.
 
     Returns:
         str: The transcribed text.
     """
     try:
-        with open(filename, "rb") as audio_file:
+        with open(st.session_state.source_lang_audio_filename, "rb") as audio_file:
             transcript = openai.Audio.transcribe("whisper-1", audio_file)
+            with open("transcript.txt", "w") as f:
+                f.write(transcript["text"])
             return transcript["text"]
     except Exception as e:
         st.error(f"Error transcribing audio: {e}")
@@ -237,20 +247,25 @@ def transcribe_audio(filename: str) -> str:
 
 
 
-def translate_text(text: str, target_lang: str) -> str:
+def translate_text(target_lang: str) -> str:
     """
     Translates the given text into the specified target language using OpenAI's GPT-3 API.
 
     Args:
-        text (str): The text to translate.
         target_lang (str): The ISO 639-1 language code for the target language.
 
     Returns:
         str: The translated text.
     """
     # Validate input
-    if not text or not target_lang:
-        raise ValueError("Both 'text' and 'target_lang' arguments are required.")
+    if not target_lang:
+        raise ValueError("'target_lang' argument is required.")
+
+    try:
+        with open (st.session_state.transcript_filename) as f:
+            text=f.read()
+    except Exception as e:
+        print(f"Error reading transcript file: {e.args}")
 
     # Translate text using OpenAI's API
     try:
@@ -262,6 +277,11 @@ def translate_text(text: str, target_lang: str) -> str:
             stop=None,
             temperature=0.5,
         )
+        try:
+            with open ("translation.txt", "w") as f:
+                f.write(response.choices[0].text.strip())
+        except Exception as e:
+            print(f"Error writing translation file: {e.args}")
         return response.choices[0].text.strip()
     except openai.Error as e:
         # Catch specific OpenAI errors
@@ -281,15 +301,22 @@ def read_the_translation() -> None:
     Returns:
         None.
     """
-    if not st.session_state.translation or not st.session_state.target_lang:
-        raise ValueError("'translation' and 'target_lang' must be set in session state.")
+    if not st.session_state.translation_filename:
+        raise ValueError("A file with the text to be read must exist")
+    if not st.session_state.target_lang:
+        raise ValueError("'target_lang' must be chosen.")
 
     # Generate speech from translated text
-    myobj = gTTS(text=st.session_state.translation, lang=st.session_state.target_lang, slow=False)
+    try:
+        with open(st.session_state.translation_filename) as f:
+            translation=f.read()
+    except Exception as e:
+        print(f"Error opening the translation file: {e.args}")
+    myobj = gTTS(text=translation, lang=st.session_state.target_lang, slow=False)
 
     # Save speech to MP3 file
     try:
-        myobj.save("wwwelcome.mp3")
+        myobj.save(st.session_state.target_lang_audio_filename)
     except Exception as e:
         # Handle file save errors
         print(f"Error saving audio file: {e}")
@@ -297,7 +324,7 @@ def read_the_translation() -> None:
 
     # Play MP3 file
     try:
-        os.system("xdg-open wwwelcome.mp3")
+        os.system(f"xdg-open {st.session_state.target_lang_audio_filename}")
     except Exception as e:
         # Handle file play errors
         print(f"Error playing audio file: {e}")
@@ -315,10 +342,18 @@ def main() -> None:
     try:
         st.set_page_config(page_title="Speech2Speech")
         st.header("Speech2Speech")
-        audio_filename, channels, rate, chunk = read_config()
+        source_lang_audio_filename, channels, rate, chunk, \
+            transcript_filename, \
+            translation_filename, target_lang_audio_filename, \
+            lang_codes = read_config()
         col1, col2, col3 = st.columns(3)
         st.session_state.disabled = False
         st.session_state.recording_stopped = False
+        st.session_state.source_lang_audio_filename=source_lang_audio_filename
+        st.session_state.transcript_filename=transcript_filename
+        st.session_state.translation_filename=translation_filename
+        st.session_state.target_lang_audio_filename=target_lang_audio_filename
+        st.session_state.lang_codes=lang_codes.split(",")
 
         with col1:
             record_button = st.button(
@@ -341,14 +376,10 @@ def main() -> None:
 
             placeholder_1 = st.empty()
 
-            lang_codes = [
-                "de", "en", "es", "fr", "it", "ja", "ko", "nl", "pt",
-                "pt-BR", "ru", "zh", "zh-TW"
-            ]
 
             target_lang = st.selectbox(
                 "Target Language",
-                lang_codes,
+                st.session_state.lang_codes,
                 key="target_lang",
             )
 
@@ -370,9 +401,9 @@ def main() -> None:
                 use_container_width=True,
             )
 
-        handle_record(record_button, audio_filename, channels, chunk, rate)
+        handle_record(record_button, source_lang_audio_filename, channels, chunk, rate)
         handle_stop(stop_button)
-        handle_transcribe(transcribe_button, audio_filename, placeholder_1)
+        handle_transcribe(transcribe_button, source_lang_audio_filename, placeholder_1)
         handle_translate(translate_button, target_lang, placeholder_1,
                          placeholder_2)
         handle_read_translation(read_translation_button, placeholder_1,
@@ -380,13 +411,13 @@ def main() -> None:
     except Exception as e:
         st.write("Error: ", e)
 
-def handle_record(record_button: bool, audio_filename: str, channels: int, chunk: int, rate: int) -> None:
+def handle_record(record_button: bool, source_lang_audio_filename: str, channels: int, chunk: int, rate: int) -> None:
     """
-    If record_button is True, record audio and save it to audio_filename.
+    If record_button is True, record audio and save it to source_lang_audio_filename.
 
     Args:
         record_button (bool): Indicates whether the record button is pressed.
-        audio_filename (str): The name of the audio file to save.
+        source_lang_audio_filename (str): The name of the audio file to save.
         channels (int): The number of audio channels.
         chunk (int): The number of audio frames per buffer.
         rate (int): The sampling rate of the audio.
@@ -401,7 +432,7 @@ def handle_record(record_button: bool, audio_filename: str, channels: int, chunk
         raise ValueError("rate must be a positive integer")
 
     if record_button:
-        stream_record(audio_filename, channels, chunk, rate)
+        stream_record(source_lang_audio_filename, channels, chunk, rate)
 
 
 def handle_stop(stop_button: bool) -> None:
@@ -424,13 +455,13 @@ def handle_stop(stop_button: bool) -> None:
 import typing
 
 
-def handle_transcribe(transcribe_button: bool, audio_filename: str, placeholder_1) -> None:
+def handle_transcribe(transcribe_button: bool, source_lang_audio_filename: str, placeholder_1) -> None:
     """
-    If transcribe_button is True, transcribe the audio in audio_filename and display the result.
+    If transcribe_button is True, transcribe the audio in source_lang_audio_filename and display the result.
 
     Args:
         transcribe_button (bool): Indicates whether the transcribe button is pressed.
-        audio_filename (str): The name of the audio file to transcribe.
+        source_lang_audio_filename (str): The name of the audio file to transcribe.
         placeholder_1: A Streamlit placeholder to display the transcription.
 
     Raises:
@@ -444,10 +475,15 @@ def handle_transcribe(transcribe_button: bool, audio_filename: str, placeholder_
         raise TypeError("placeholder_1 must be a Streamlit placeholder")
 
     if transcribe_button:
-        transcription = transcribe_audio(audio_filename)
+        transcription = transcribe_audio()
         st.session_state["transcription"] = transcription
         with placeholder_1:
             st.success(f"Transcription:\n{st.session_state.transcription}")
+        try:
+            with open(st.session_state.transcript_filename, "w") as f:
+                f.write(st.session_state.transcription)
+        except Exception as e:
+            print(f"Error saving transcript file: {e. args}")
 
 import typing
 
@@ -484,12 +520,17 @@ def handle_translate(translate_button: bool, target_lang: str, placeholder_1, pl
         if transcription is None:
             st.error("No transcription available for translation")
             return
-        translation = translate_text(transcription, target_lang)
+        translation = translate_text(target_lang)
         st.session_state["translation"] = translation
         with placeholder_1:
             st.success(f"Transcription:\n{transcription}")
         with placeholder_2:
             st.info(f"Translation:\n{translation}")
+        try:
+            with open(st.session_state.translation_filename, "w") as f:
+                f.write(translation)
+        except Exception as e:
+            print(f"Error saving translation file: {e.args}")
 
 
 

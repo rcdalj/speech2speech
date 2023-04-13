@@ -1,10 +1,16 @@
 # Speech2Speech
 
-Speech2Speech is a Python package that performs vocal recognition of 
-your speech, followed by translation to a target language of your choice, 
-which is then read out loud by a high-quality voice.
+The Speech2Speech Python package models all phases of speech-to-speech translation, which include recording speech, converting speech to text, translating text to a target language, and converting the translated text back to speech. Each phase of the workflow creates a file, whose name is defined in the config.ini file. Advanced users can start or interrupt the workflow wherever they want by specifying their own files and adapting the config.ini file to refer to them. The user can also launch a specific phase of the workflow by clicking on the corresponding button.
 
-As long as your speech is in one of the many languages that Chat-GPT can transcribe, you do not have to indicate the source language you are using.
+Speech2Speech is designed to be accessible to a broad audience, including non-technical users. The package does not require any specialized software training or user knowledge and can be used straight out of the box. This makes it incredibly accessible to a wide range of users, including those with visual impairments who can input text by dictating it and have the package read documents aloud.
+
+The package uses PyAudio, Open AI Whisper, Chat-GPT, and Google gttx and 
+can automatically detect the source language used in speech. Users can, 
+therefore, access accurate translations for a wide range of languages 
+without having to switch between different translation tools. Although the 
+quality of translation may vary depending on the target language, it is 
+pretty good for popular languages such as English, French, Portuguese, 
+Spanish, German, Dutch and Italian.
 
 Prerequisites
 -----------------------------------------------------------------------------
@@ -20,7 +26,7 @@ on the "View API Keys" tab in the OpenAI dashboard. Click on the "Create new sec
 
 3. **Create an Environment Variable to Load Your OpenAI API Key**:
 
-   A. **Ubuntu and Mac**
+   A. **Ubuntu (tested) and Mac (not yet tested)**
    
    Open your terminal. Type the following command to open your shell profile file:
       
@@ -34,7 +40,7 @@ on the "View API Keys" tab in the OpenAI dashboard. Click on the "Create new sec
          
          source ~/.bashrc
          
-   B. **Windows**
+   B. **Windows (not yet tested)**
    Right-click on the "Start" button and select "System".
    
    Click on "Advanced system settings".
