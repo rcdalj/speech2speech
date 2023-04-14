@@ -83,7 +83,7 @@ def main() -> None:
                 key="record",
                 # on_click=set_state,
                 use_container_width=True,
-                disabled=st.session_state.disabled,
+                #disabled=st.session_state.disabled,
             )
 
             stop_button = st.button(
@@ -126,14 +126,14 @@ def main() -> None:
                 st.write("App is now closing ...")
                 exit_app()
 
-        handle_record(record_button, source_lang_audio_filename, channels,
+        if record_button: handle_record(source_lang_audio_filename, channels,
                       chunk, rate)
-        handle_stop(stop_button)
-        handle_transcribe(transcribe_button, source_lang_audio_filename,
+        if stop_button: handle_stop_recording(st.session_state.get("stop_event"))
+        if transcribe_button: handle_transcribe(source_lang_audio_filename,
                           placeholder_1)
-        handle_translate(translate_button, target_lang, placeholder_1,
+        if translate_button: handle_translate(target_lang, placeholder_1,
                          placeholder_2)
-        handle_read_translation(read_translation_button, placeholder_1,
+        if read_translation_button: handle_read_translation(placeholder_1,
                                 placeholder_2)
     except Exception as e:
         st.write("Error: ", e)
@@ -201,13 +201,12 @@ def set_state():
     st.session_state.disabled = True
 
 
-def handle_record(record_button: bool, source_lang_audio_filename: str,
+def handle_record(source_lang_audio_filename: str,
                   channels: int, chunk: int, rate: int) -> None:
     """
     If record_button is True, record audio and save it to source_lang_audio_filename.
 
     Args:
-        record_button (bool): Indicates whether the record button is pressed.
         source_lang_audio_filename (str): The name of the audio file to save.
         channels (int): The number of audio channels.
         chunk (int): The number of audio frames per buffer.
@@ -222,8 +221,7 @@ def handle_record(record_button: bool, source_lang_audio_filename: str,
     if not isinstance(rate, int) or rate <= 0:
         raise ValueError("rate must be a positive integer")
 
-    if record_button:
-        stream_record(st.session_state.source_lang_audio_filename, channels,
+    stream_record(st.session_state.source_lang_audio_filename, channels,
                       chunk, rate)
 
 def stream_record(source_lang_audio_filename: str, channels: int, chunk: int,
@@ -321,23 +319,9 @@ def record_audio(channels: int, rate: int, chunk: int, filename: str,
         wf.writeframes(b''.join(list(audio_queue.queue)))
 
 
-def handle_stop(stop_button: bool) -> None:
-    """
-    If stop_button is True, stop the recording.
 
-    Args:
-        stop_button (bool): Indicates whether the stop button is pressed.
-
-    Raises:
-        ValueError: If stop_button is not a boolean value.
-    """
-    if not isinstance(stop_button, bool):
-        raise ValueError("stop_button must be a boolean value")
-
-    if stop_button:
-        stop_recording(st.session_state.get("stop_event"))
-
-def stop_recording(stop_event: Optional[threading.Event] = None) -> None:
+def handle_stop_recording(stop_event: Optional[threading.Event] = None) -> \
+        None:
     """
     Stops the recording process by setting the stop event.
 
@@ -357,13 +341,12 @@ def stop_recording(stop_event: Optional[threading.Event] = None) -> None:
     st.session_state.stop_event = stop_event
 
 
-def handle_transcribe(transcribe_button: bool, source_lang_audio_filename: str,
+def handle_transcribe(source_lang_audio_filename: str,
                       placeholder_1) -> None:
     """
     If transcribe_button is True, transcribe the audio in source_lang_audio_filename and display the result.
 
     Args:
-        transcribe_button (bool): Indicates whether the transcribe button is pressed.
         source_lang_audio_filename (str): The name of the audio file to transcribe.
         placeholder_1: A Streamlit placeholder to display the transcription.
 
@@ -371,23 +354,19 @@ def handle_transcribe(transcribe_button: bool, source_lang_audio_filename: str,
         ValueError: If transcribe_button is not a boolean value.
         TypeError: If placeholder_1 is not a Streamlit placeholder.
     """
-    if not isinstance(transcribe_button, bool):
-        raise ValueError("transcribe_button must be a boolean value")
-
     if not hasattr(placeholder_1, "empty") or not hasattr(placeholder_1,
                                                           "success"):
         raise TypeError("placeholder_1 must be a Streamlit placeholder")
 
-    if transcribe_button:
-        transcription = transcribe_audio()
-        st.session_state.transcription = transcription
-        with placeholder_1:
-            st.success(f"Transcription:\n{st.session_state.transcription}")
-        try:
-            with open(st.session_state.transcript_filename, "w") as f:
-                f.write(st.session_state.transcription)
-        except Exception as e:
-            print(f"Error saving transcript file: {e.args}")
+    transcription = transcribe_audio()
+    st.session_state.transcription = transcription
+    with placeholder_1:
+        st.success(f"Transcription:\n{st.session_state.transcription}")
+    try:
+        with open(st.session_state.transcript_filename, "w") as f:
+            f.write(st.session_state.transcription)
+    except Exception as e:
+        print(f"Error saving transcript file: {e.args}")
 
 def transcribe_audio() -> str:
     """Transcribes an audio file using OpenAI's API.
@@ -409,14 +388,13 @@ def transcribe_audio() -> str:
         return ""
 
 
-def handle_translate(translate_button: bool, target_lang: str, placeholder_1,
+def handle_translate(target_lang: str, placeholder_1,
                      placeholder_2) -> None:
     """
     If translate_button is True, translate the transcription in the Streamlit session state
     to the specified target language and display the results.
 
     Args:
-        translate_button (bool): Indicates whether the translate button is pressed.
         target_lang (str): The target language for translation.
         placeholder_1: A Streamlit placeholder to display the transcription.
         placeholder_2: A Streamlit placeholder to display the translation.
@@ -425,9 +403,6 @@ def handle_translate(translate_button: bool, target_lang: str, placeholder_1,
         ValueError: If translate_button is not a boolean value or if target_lang is not a string.
         TypeError: If placeholder_1 or placeholder_2 is not a Streamlit placeholder.
     """
-    if not isinstance(translate_button, bool):
-        raise ValueError("translate_button must be a boolean value")
-
     if not isinstance(target_lang, str):
         raise ValueError("target_lang must be a string")
 
@@ -439,29 +414,28 @@ def handle_translate(translate_button: bool, target_lang: str, placeholder_1,
                                                           "info"):
         raise TypeError("placeholder_2 must be a Streamlit placeholder")
 
-    if translate_button:
-        transcript_filename = st.session_state.get("transcript_filename")
-        try:
-            with open(st.session_state.transcript_filename) as f:
-                transcription = f.read()
-                st.session_state.transcription = transcription
-                print(st.session_state.transcription)
-        except Exception as e:
-            print(f"Error reading transcript file: {e.args}")
-        if transcription is None:
-            st.error("No transcription available for translation")
-            return
-        translation = translate_text(target_lang)
-        st.session_state["translation"] = translation
-        with placeholder_1:
-            st.success(f"Transcription:\n{transcription}")
-        with placeholder_2:
-            st.info(f"Translation:\n{translation}")
-        try:
-            with open(st.session_state.translation_filename, "w") as f:
-                f.write(translation)
-        except Exception as e:
-            print(f"Error saving translation file: {e.args}")
+    transcript_filename = st.session_state.get("transcript_filename")
+    try:
+        with open(st.session_state.transcript_filename) as f:
+            transcription = f.read()
+            st.session_state.transcription = transcription
+            print(st.session_state.transcription)
+    except Exception as e:
+        print(f"Error reading transcript file: {e.args}")
+    if transcription is None:
+        st.error("No transcription available for translation")
+        return
+    translation = translate_text(target_lang)
+    st.session_state["translation"] = translation
+    with placeholder_1:
+        st.success(f"Transcription:\n{transcription}")
+    with placeholder_2:
+        st.info(f"Translation:\n{translation}")
+    try:
+        with open(st.session_state.translation_filename, "w") as f:
+            f.write(translation)
+    except Exception as e:
+        print(f"Error saving translation file: {e.args}")
 
 def translate_text(target_lang: str) -> str:
     """
@@ -509,14 +483,13 @@ def translate_text(target_lang: str) -> str:
         return ""
 
 
-def handle_read_translation(read_translation_button: bool, placeholder_1,
+def handle_read_translation(placeholder_1,
                             placeholder_2) -> None:
     """
     If read_translation_button is True, read the translation in the Streamlit session state
     out loud and display the transcription and translation.
 
     Args:
-        read_translation_button (bool): Indicates whether the read translation button is pressed.
         placeholder_1: A Streamlit placeholder to display the transcription.
         placeholder_2: A Streamlit placeholder to display the translation.
 
@@ -525,9 +498,6 @@ def handle_read_translation(read_translation_button: bool, placeholder_1,
         TypeError: If placeholder_1 or placeholder_2 is not a Streamlit placeholder.
         KeyError: If transcription or translation is not available in the Streamlit session state.
     """
-    if not isinstance(read_translation_button, bool):
-        raise ValueError("read_translation_button must be a boolean value")
-
     if not hasattr(placeholder_1, "empty") or not hasattr(placeholder_1,
                                                           "success"):
         raise TypeError("placeholder_1 must be a Streamlit placeholder")
@@ -536,20 +506,19 @@ def handle_read_translation(read_translation_button: bool, placeholder_1,
                                                           "info"):
         raise TypeError("placeholder_2 must be a Streamlit placeholder")
 
-    if read_translation_button:
-        transcription = st.session_state.get("transcription")
-        if transcription is None:
-            raise KeyError(
-                "Transcription not available in the Streamlit session state")
-        translation = st.session_state.get("translation")
-        if translation is None:
-            raise KeyError(
-                "Translation not available in the Streamlit session state")
-        read_the_translation()
-        with placeholder_1:
-            st.success(f"Transcription:\n{transcription}")
-        with placeholder_2:
-            st.info(f"Translation:\n{translation}")
+    transcription = st.session_state.get("transcription")
+    if transcription is None:
+        raise KeyError(
+            "Transcription not available in the Streamlit session state")
+    translation = st.session_state.get("translation")
+    if translation is None:
+        raise KeyError(
+            "Translation not available in the Streamlit session state")
+    read_the_translation()
+    with placeholder_1:
+        st.success(f"Transcription:\n{transcription}")
+    with placeholder_2:
+        st.info(f"Translation:\n{translation}")
 
 def read_the_translation() -> None:
     """
