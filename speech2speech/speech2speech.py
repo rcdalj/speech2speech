@@ -123,12 +123,11 @@ def main() -> None:
                 st.write("App is now closing ...")
                 exit_app()
 
-        if record_button: handle_record(
-            st.session_state.source_lang_audio_filename,
-            st.session_state.channels,
-            st.session_state.chunk,
-            st.session_state.rate)
-        if stop_button: handle_stop_recording(st.session_state.get("stop_event"))
+        if record_button:
+            stop_event = threading.Event()
+            st.session_state.stop_event = stop_event
+            handle_record()
+        if stop_button: handle_stop_recording()
         if transcribe_button: handle_transcribe(
             st.session_state.source_lang_audio_filename,
                           placeholder_1)
@@ -201,26 +200,8 @@ def set_state():
     st.session_state.disabled = True
 
 
-def handle_record(source_lang_audio_filename: str,
-                  channels: int, chunk: int, rate: int) -> None:
-    """
-    If record_button is True, record audio and save it to source_lang_audio_filename.
 
-    Args:
-        source_lang_audio_filename (str): The name of the audio file to save.
-        channels (int): The number of audio channels.
-        chunk (int): The number of audio frames per buffer.
-        rate (int): The sampling rate of the audio.
-
-    Raises:
-        ValueError: If channels or rate are not positive integers.
-        IOError: If there was an error opening the audio file.
-    """
-    stream_record(st.session_state.source_lang_audio_filename, channels,
-                      chunk, rate)
-
-def stream_record(source_lang_audio_filename: str, channels: int, chunk: int,
-                  rate: int) -> None:
+def handle_record() -> None:
     """Record audio from microphone and save to file.
 
     Args:
@@ -234,14 +215,13 @@ def stream_record(source_lang_audio_filename: str, channels: int, chunk: int,
 
     """
     try:
-        stop_event = threading.Event()
-        st.session_state.stop_event = stop_event
         audio_queue = queue.Queue()
         record_thread = threading.Thread(target=record_audio,
-                                         args=(channels, rate,
-                                               chunk,
+                                         args=(st.session_state.channels,
+                                               st.session_state.rate,
+                                               st.session_state.chunk,
                                                st.session_state.source_lang_audio_filename,
-                                               stop_event, audio_queue))
+                                               st.session_state.stop_event, audio_queue))
         record_thread.start()
     except Exception as e:
         st.write(f"Error starting recording: {e}")
@@ -250,12 +230,12 @@ def stream_record(source_lang_audio_filename: str, channels: int, chunk: int,
     st.write("Recording... Press 'Stop Recording' button to stop.")
 
     # Wait for the recording to finish or for the "Stop Recording" button to be pressed
-    while record_thread.is_alive() and not stop_event.is_set():
+    while record_thread.is_alive() and not st.session_state.stop_event.is_set():
         time.sleep(0.1)
 
     if record_thread.is_alive():
         # If the thread is still running, stop it and wait for it to finish
-        stop_event.set()
+        st.session_state.stop_event.set()
         record_thread.join()
 
     st.write("Recording stopped by user")
@@ -308,7 +288,7 @@ def record_audio(channels: int, rate: int, chunk: int, filename: str,
 
 
 
-def handle_stop_recording(stop_event: Optional[threading.Event] = None) -> \
+def handle_stop_recording() -> \
         None:
     """
     Stops the recording process by setting the stop event.
@@ -319,14 +299,13 @@ def handle_stop_recording(stop_event: Optional[threading.Event] = None) -> \
     Raises:
         TypeError: If stop_event is not None and is not a threading.Event object.
     """
-    if stop_event:
-        if not isinstance(stop_event, threading.Event):
+    if st.session_state.stop_event:
+        if not isinstance(st.session_state.stop_event, threading.Event):
             raise TypeError("stop_event must be a threading.Event object.")
-        stop_event.set()
     else:
         stop_event = threading.Event()
-        stop_event.set()
-    st.session_state.stop_event = stop_event
+        st.session_state.stop_event = stop_event
+    st.session_state.stop_event.set()
 
 
 def handle_transcribe(source_lang_audio_filename: str,
