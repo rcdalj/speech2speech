@@ -69,10 +69,7 @@ def main() -> None:
     try:
         st.set_page_config(page_title="Speech2Speech")
         st.header("Speech2Speech")
-        source_lang_audio_filename, channels, rate, chunk, \
-            transcript_filename, \
-            translation_filename, target_lang_audio_filename, \
-            lang_codes = read_config()
+        read_config()
         col1, col2, col3 = st.columns(3)
         st.session_state.disabled = False
         st.session_state.recording_stopped = False
@@ -126,10 +123,14 @@ def main() -> None:
                 st.write("App is now closing ...")
                 exit_app()
 
-        if record_button: handle_record(source_lang_audio_filename, channels,
-                      chunk, rate)
+        if record_button: handle_record(
+            st.session_state.source_lang_audio_filename,
+            st.session_state.channels,
+            st.session_state.chunk,
+            st.session_state.rate)
         if stop_button: handle_stop_recording(st.session_state.get("stop_event"))
-        if transcribe_button: handle_transcribe(source_lang_audio_filename,
+        if transcribe_button: handle_transcribe(
+            st.session_state.source_lang_audio_filename,
                           placeholder_1)
         if translate_button: handle_translate(target_lang, placeholder_1,
                          placeholder_2)
@@ -169,12 +170,15 @@ def read_config() -> Tuple[str, int, int, int, str, str, str, str]:
         lang_codes = config.get('languages', 'lang_codes')
         log = config.getint('debugging', 'log')
 
-        if channels <= 0:
+        if not isinstance(channels, int) or channels <= 0:
             raise ValueError("'channels' must be a positive integer.")
-        if rate <= 0:
+        if not isinstance(rate, int) or  rate <= 0:
             raise ValueError("'rate' must be a positive integer.")
-        if chunk <= 0:
+        if not isinstance(chunk, int) or chunk <= 0:
             raise ValueError("'chunk' must be a positive integer.")
+        st.session_state.channels = channels
+        st.session_state.rate = rate
+        st.session_state.chunk = chunk
         st.session_state.source_lang_audio_filename \
             = os.path.join("data", source_lang_audio_filename)
         st.session_state.transcript_filename = os.path.join("data",
@@ -186,10 +190,6 @@ def read_config() -> Tuple[str, int, int, int, str, str, str, str]:
                                                                    target_lang_audio_filename)
         st.session_state.lang_codes = lang_codes.split(",")
         st.session_state.log = log
-
-        return source_lang_audio_filename, channels, rate, chunk, \
-            transcript_filename, translation_filename, \
-            target_lang_audio_filename, lang_codes
 
     except configparser.Error as e:
         raise configparser.Error(f"Error reading configuration file: {e.args}")
@@ -216,11 +216,6 @@ def handle_record(source_lang_audio_filename: str,
         ValueError: If channels or rate are not positive integers.
         IOError: If there was an error opening the audio file.
     """
-    if not isinstance(channels, int) or channels <= 0:
-        raise ValueError("channels must be a positive integer")
-    if not isinstance(rate, int) or rate <= 0:
-        raise ValueError("rate must be a positive integer")
-
     stream_record(st.session_state.source_lang_audio_filename, channels,
                       chunk, rate)
 
@@ -287,13 +282,6 @@ def record_audio(channels: int, rate: int, chunk: int, filename: str,
         raise TypeError("stop_event must be a threading.Event object.")
     if not isinstance(audio_queue, queue.Queue):
         raise TypeError("audio_queue must be a queue.Queue object.")
-    if channels <= 0 or not isinstance(channels, int):
-        raise ValueError("channels must be a positive integer.")
-    if rate <= 0 or not isinstance(rate, int):
-        raise ValueError("rate must be a positive integer.")
-    if chunk <= 0 or not isinstance(chunk, int):
-        raise ValueError("chunk must be a positive integer.")
-
     FORMAT = pyaudio.paInt32
 
     audio = pyaudio.PyAudio()
