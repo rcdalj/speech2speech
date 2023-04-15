@@ -128,9 +128,7 @@ def main() -> None:
             st.session_state.stop_event = stop_event
             handle_record()
         if stop_button: handle_stop_recording()
-        if transcribe_button: handle_transcribe(
-            st.session_state.source_lang_audio_filename,
-                          placeholder_1)
+        if transcribe_button: handle_transcribe(placeholder_1)
         if translate_button: handle_translate(target_lang, placeholder_1,
                          placeholder_2)
         if read_translation_button: handle_read_translation(placeholder_1,
@@ -205,10 +203,6 @@ def handle_record() -> None:
     """Record audio from microphone and save to file.
 
     Args:
-        source_lang_audio_filename (str): Name of the output audio file.
-        channels (int): Number of audio channels.
-        chunk (int): Number of audio frames per buffer.
-        rate (int): Sampling rate of audio.
 
     Raises:
         Exception: Raised if there is an error while recording audio.
@@ -238,7 +232,6 @@ def handle_record() -> None:
         st.session_state.stop_event.set()
         record_thread.join()
 
-    st.write("Recording stopped by user")
 
 def record_audio(channels: int, rate: int, chunk: int, filename: str,
                  stop_event: threading.Event,
@@ -285,6 +278,7 @@ def record_audio(channels: int, rate: int, chunk: int, filename: str,
         wf.setsampwidth(audio.get_sample_size(FORMAT))
         wf.setframerate(rate)
         wf.writeframes(b''.join(list(audio_queue.queue)))
+    pyautogui.hotkey("ctrl", "F5")
 
 
 
@@ -294,7 +288,6 @@ def handle_stop_recording() -> \
     Stops the recording process by setting the stop event.
 
     Args:
-        stop_event (threading.Event, optional): The stop event to set. If None, a new event is created.
 
     Raises:
         TypeError: If stop_event is not None and is not a threading.Event object.
@@ -308,13 +301,11 @@ def handle_stop_recording() -> \
     st.session_state.stop_event.set()
 
 
-def handle_transcribe(source_lang_audio_filename: str,
-                      placeholder_1) -> None:
+def handle_transcribe(placeholder_1) -> None:
     """
     If transcribe_button is True, transcribe the audio in source_lang_audio_filename and display the result.
 
     Args:
-        source_lang_audio_filename (str): The name of the audio file to transcribe.
         placeholder_1: A Streamlit placeholder to display the transcription.
 
     Raises:
@@ -355,8 +346,7 @@ def transcribe_audio() -> str:
         return ""
 
 
-def handle_translate(target_lang: str, placeholder_1,
-                     placeholder_2) -> None:
+def handle_translate(target_lang: str, placeholder_1, placeholder_2) -> None:
     """
     If translate_button is True, translate the transcription in the Streamlit session state
     to the specified target language and display the results.
@@ -432,7 +422,7 @@ def translate_text(target_lang: str) -> str:
             max_tokens=1024,
             n=1,
             stop=None,
-            temperature=0.5,
+            temperature=0,
         )
         try:
             with open(st.session_state.translation_filename, "w") as f:
