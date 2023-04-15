@@ -1,10 +1,11 @@
 # Speech2Speech
 
-The Speech2Speech Python package **models all phases of speech-to-speech translation**, which include
-- recording speech, 
-- converting speech to text, 
-- translating text to a target language, and 
-- converting the translated text back to speech. 
+The Speech2Speech Python package is a Streamlit Web application that **models 
+all phases of speech-to-speech translation**, including:
+- recording speech in source language, 
+- converting source language speech to text, 
+- translating source language text to target language text, and 
+- converting the translated text to speech in the target language. 
 
 Each phase of the workflow creates a file, whose name is defined in the config.ini file. Advanced users can start or interrupt the workflow wherever they want by specifying their own files and adapting the config.ini file to refer to them. The user can also launch a specific phase of the workflow by clicking on the corresponding button.
 

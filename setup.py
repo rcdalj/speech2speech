@@ -105,7 +105,8 @@ setup(
     # by commas, to be used to assist searching for the distribution in a
     # larger catalog.
     keywords="speech_recognition, machine_translation, text_to_speech, "
-             "setuptools, development",  # Optional
+             "setuptools, development, python-3, chat-gpt, whisper-ai, "
+             "pyaudio, gtts",  # Optional
     # When your source code is in a subdirectory under the project root, e.g.
     # `src/`, it is necessary to specify the `package_dir` argument.
     package_dir={"": "speech2speech"},  # Optional

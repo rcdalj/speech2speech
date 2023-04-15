@@ -5,3 +5,5 @@
 /TODO.txt
 /speech2speech/logs.log
 /speech2speech/data/logs.log
+/.pytest_cache/
+/tests/
