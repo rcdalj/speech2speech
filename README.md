@@ -2,16 +2,32 @@
 
 The Speech2Speech Python package is a Streamlit Web application that **models 
 all phases of speech-to-speech translation**, including:
-- recording speech in source language, 
-- converting source language speech to text, 
-- translating source language text to target language text, and 
+- recording speech in the source language, 
+- converting the source language speech to source language text, 
+- translating the source language text to target language text, and 
 - converting the translated text to speech in the target language. 
 
-Each phase of the workflow creates a file, whose name is defined in the config.ini file. Advanced users can start or interrupt the workflow wherever they want by specifying their own files and adapting the config.ini file to refer to them. The user can also launch a specific phase of the workflow by clicking on the corresponding button.
+Speech2Speech is currently **configured to translate to and from 13 different 
+languages**. Although the quality of  translation may vary depending on the 
+target language, it is pretty good for popular languages such as English, 
+French, Portuguese, Spanish, German, Dutch and Italian. Speech2Speech **can be 
+configured for many more than just these languages** (specified in the config.
+ini file), as long as they are supported by Whisper AI, Chat-GPT and gtts, 
+the packages on which it depends.
 
-Speech2Speech is designed to be accessible to a **broad audience**, including non-technical users. The package **does not require any specialized software training or user knowledge** and can be used straight out of the box. This makes it incredibly accessible to a wide range of users, including those with visual impairments who can input text by dictating it and have the package read documents aloud.
+The package **automatically detects the source language used in speech**. The 
+user therefore is not asked to specify it.
 
-The package uses PyAudio, Open AI Whisper, Chat-GPT, and Google gttx and can automatically detect the source language used in speech. Users can, therefore, access accurate translations for a **wide range of languages** without having to switch between different translation tools. Although the quality of translation may vary depending on the target language, it is pretty good for popular languages such as English, French, Portuguese, Spanish, German, Dutch and Italian.
+Speech2Speech is designed to be accessible to a **broad audience**. One of 
+the key advantages of Speech2Speech is that it's incredibly easy to use. 
+There is **no need to train the software or the user before actually using 
+the product**. It works well straight out of the box with no further tuning 
+or configuration required. This makes it a highly accessible tool that anyone can use, regardless of their technical expertise or experience with speech recognition and machine translation technology.
+
+Each phase of the workflow creates a file, whose name is defined in the 
+config.ini file. Advanced users can **start and/or interrupt the workflow 
+wherever they need** by inserting their own files in the speech2speech/data 
+subdirectory and adapting the config.ini file to refer to them. 
 
 Prerequisites
 -----------------------------------------------------------------------------
@@ -101,4 +117,5 @@ As indicated above, you can also use just parts of this full workflow by specify
 What to do if you encounter issues
 -------------------------------
 
-If Chat-GPT or speech2speech get stuck or you encounter any issues, simply click the "Refresh Page" button to reload the page with the default settings.
+If Chat-GPT or Speech2Speech get stuck or you encounter any issues, simply 
+refresh the browser page.

@@ -1,11 +1,8 @@
 import configparser
 import os
-import queue
 import sys
 import threading
-import time
 import wave
-from typing import Optional
 from typing import Tuple
 
 import openai
@@ -16,6 +13,17 @@ import streamlit as st
 from gtts import gTTS
 from pydub import AudioSegment
 from pydub.playback import play
+from pynput import keyboard
+
+
+# define a function to handle keyboard input
+def on_press(key):
+    if key == keyboard.Key.ctrl_l and not listener.recording:
+        print("Recording... Press CTRL+E to stop recording.")
+        listener.recording = True
+    elif key == keyboard.Key.e and listener.recording:
+        listener.recording = False
+        return False
 
 
 def get_api_key() -> str:
@@ -39,26 +47,20 @@ def get_api_key() -> str:
     return api_key.strip()
 
 
-openai.api_key = get_api_key()
-
-
-
-def file_exists(file_path):
+def check_file_exists(filepath, config_filename):
     """
     This function checks whether a file exists or not and returns a boolean value.
 
-    :param file_path: The path of the file to be checked.
-    :type file_path: str
-    :return: True if the file exists, False otherwise.
-    :rtype: bool
+    Args:
+    filepath (str): The path of the file to be checked.
+    config_filename (str): the name of the config entry relative to this file
+
+    Returns:
     """
-    return os.path.exists(file_path) and os.path.isfile(file_path)
-
-
-
-
-
-
+    exists = os.path.exists(filepath) and os.path.isfile(filepath)
+    if not exists:
+        raise FileNotFoundError(f"The {config_filename} ("
+                                f"{filepath}) does not exist")
 
 
 # Main function
@@ -67,6 +69,7 @@ def main() -> None:
     Main function to run the Speech2Speech app.
     """
     try:
+        openai.api_key = get_api_key()
         st.set_page_config(page_title="Speech2Speech")
         st.header("Speech2Speech")
         read_config()
@@ -78,22 +81,18 @@ def main() -> None:
             record_button = st.button(
                 "Record Audio",
                 key="record",
-                # on_click=set_state,
-                use_container_width=True,
-                #disabled=st.session_state.disabled,
-            )
-
-            stop_button = st.button(
-                "Stop Recording",
                 use_container_width=True,
             )
+            placeholder_1 = st.empty()
+            placeholder_2 = st.empty()
 
             transcribe_button = st.button(
                 "Transcribe",
                 use_container_width=True,
             )
 
-            placeholder_1 = st.empty()
+            placeholder_3 = st.empty()
+            placeholder_4 = st.empty()
 
             target_lang = st.selectbox(
                 "Target Language",
@@ -106,33 +105,36 @@ def main() -> None:
                 use_container_width=True
             )
 
-            placeholder_2 = st.empty()
+            placeholder_5 = st.empty()
+            placeholder_6 = st.empty()
+            placeholder_7 = st.empty()
 
             read_translation_button = st.button(
                 "Read Translation",
                 use_container_width=True,
             )
-
-            refresh_button = st.button(
-                "Refresh Page",
-                on_click=refresh_page,
-                use_container_width=True,
-            )
+            placeholder_8 = st.empty()
+            placeholder_9 = st.empty()
 
             if st.button("Exit App", use_container_width=True):
                 st.write("App is now closing ...")
                 exit_app()
 
         if record_button:
+            placeholder_1.write("Recording... Press CTRL+E to stop recording.")
             stop_event = threading.Event()
             st.session_state.stop_event = stop_event
             handle_record()
-        if stop_button: handle_stop_recording()
-        if transcribe_button: handle_transcribe(placeholder_1)
-        if translate_button: handle_translate(target_lang, placeholder_1,
-                         placeholder_2)
-        if read_translation_button: handle_read_translation(placeholder_1,
-                                placeholder_2)
+            placeholder_1.write(f"Recording saved to"
+                                f" {st.session_state.source_lang_audio_filename}")
+        if transcribe_button:
+            handle_transcribe(placeholder_3, placeholder_4)
+        if translate_button:
+            handle_translate(target_lang, placeholder_5,
+                             placeholder_6, placeholder_7)
+        if read_translation_button:
+            handle_read_translation(placeholder_8,
+                                    placeholder_9)
     except Exception as e:
         st.write("Error: ", e)
 
@@ -141,11 +143,9 @@ def read_config() -> Tuple[str, int, int, int, str, str, str, str]:
     """
     Reads the configuration values from the 'config.ini' file.
 
+    Args:
+
     Returns:
-        A tuple containing the source language audio filename (str), number of
-        channels (int), sample rate (int), and chunk size (int),
-        transcript filename (str), translation filename (str),
-        target language audio filename (str) and language codes (str)
 
     Raises:
         configparser.Error: If there is an error reading the configuration file.
@@ -155,21 +155,23 @@ def read_config() -> Tuple[str, int, int, int, str, str, str, str]:
         config = configparser.ConfigParser()
         config.read('config.ini')
 
-        source_lang_audio_filename = config.get('audio',
-                                                'source_lang_audio_filename')
         channels = config.getint('audio', 'channels')
         rate = config.getint('audio', 'rate')
         chunk = config.getint('audio', 'chunk')
+        source_lang_audio_filename = config.get('audio',
+                                                'source_lang_audio_filename')
         transcript_filename = config.get('files', 'transcript_filename')
         translation_filename = config.get('files', 'translation_filename')
         target_lang_audio_filename = config.get('files',
                                                 'target_lang_audio_filename')
+        check_file_exists(target_lang_audio_filename,
+                          "target_lang_audio_filename")
         lang_codes = config.get('languages', 'lang_codes')
         log = config.getint('debugging', 'log')
 
         if not isinstance(channels, int) or channels <= 0:
             raise ValueError("'channels' must be a positive integer.")
-        if not isinstance(rate, int) or  rate <= 0:
+        if not isinstance(rate, int) or rate <= 0:
             raise ValueError("'rate' must be a positive integer.")
         if not isinstance(chunk, int) or chunk <= 0:
             raise ValueError("'chunk' must be a positive integer.")
@@ -177,14 +179,13 @@ def read_config() -> Tuple[str, int, int, int, str, str, str, str]:
         st.session_state.rate = rate
         st.session_state.chunk = chunk
         st.session_state.source_lang_audio_filename \
-            = os.path.join("data", source_lang_audio_filename)
-        st.session_state.transcript_filename = os.path.join("data",
-                                                            transcript_filename)
-        print(st.session_state.transcript_filename)
-        st.session_state.translation_filename = os.path.join("data",
-                                                             translation_filename)
-        st.session_state.target_lang_audio_filename = os.path.join("data",
-                                                                   target_lang_audio_filename)
+            = source_lang_audio_filename
+        st.session_state.transcript_filename \
+            = transcript_filename
+        st.session_state.translation_filename \
+            = translation_filename
+        st.session_state.target_lang_audio_filename \
+            = target_lang_audio_filename
         st.session_state.lang_codes = lang_codes.split(",")
         st.session_state.log = log
 
@@ -194,13 +195,9 @@ def read_config() -> Tuple[str, int, int, int, str, str, str, str]:
     except ValueError as e:
         raise ValueError(f"Invalid configuration value: {e.args}")
 
-def set_state():
-    st.session_state.disabled = True
-
-
 
 def handle_record() -> None:
-    """Record audio from microphone and save to file.
+    """Launches the recording of audio from the microphone.
 
     Args:
 
@@ -209,125 +206,67 @@ def handle_record() -> None:
 
     """
     try:
-        audio_queue = queue.Queue()
-        record_thread = threading.Thread(target=record_audio,
-                                         args=(st.session_state.channels,
-                                               st.session_state.rate,
-                                               st.session_state.chunk,
-                                               st.session_state.source_lang_audio_filename,
-                                               st.session_state.stop_event, audio_queue))
-        record_thread.start()
+        p = pyaudio.PyAudio()
+
+        # open the stream
+        stream = p.open(format=pyaudio.paInt16,
+                        channels=st.session_state.channels,
+                        rate=st.session_state.rate,
+                        input=True,
+                        frames_per_buffer=st.session_state.chunk)
+
+        # start recording
+        frames = []
+        while listener.running:
+            if listener.recording:
+                data = stream.read(st.session_state.chunk)
+                frames.append(data)
+
+        # stop the stream and PyAudio
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+
+        # save the recording to a file
+        file_name = st.session_state.source_lang_audio_filename
+        wf = wave.open(file_name, "wb")
+        wf.setnchannels(1)
+        wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+        wf.setframerate(st.session_state.rate)
+        wf.writeframes(b"".join(frames))
+        wf.close()
+
     except Exception as e:
-        st.write(f"Error starting recording: {e}")
-        return
-
-    st.write("Recording... Press 'Stop Recording' button to stop.")
-
-    # Wait for the recording to finish or for the "Stop Recording" button to be pressed
-    while record_thread.is_alive() and not st.session_state.stop_event.is_set():
-        time.sleep(0.1)
-
-    if record_thread.is_alive():
-        # If the thread is still running, stop it and wait for it to finish
-        st.session_state.stop_event.set()
-        record_thread.join()
+        print(f"Error: {e.args}")
 
 
-def record_audio(channels: int, rate: int, chunk: int, filename: str,
-                 stop_event: threading.Event,
-                 audio_queue: queue.Queue) -> None:
+def handle_transcribe(placeholder_3, placeholder_4) -> None:
     """
-    Records audio and saves it to a file.
+    If transcribe_button is clicked, transcribe the audio in
+    source_lang_audio_filename and display it.
 
     Args:
-        channels (int): The number of audio channels to record.
-        rate (int): The sampling rate of the audio.
-        chunk (int): The number of audio frames to read at a time.
-        filename (str): The name of the file to save the audio to.
-        stop_event (threading.Event): The event to signal when recording should stop.
-        audio_queue (queue.Queue): The queue to store recorded audio data in.
-
-    Raises:
-        ValueError: If channels, rate, or chunk are not positive integers.
-        TypeError: If stop_event is not a threading.Event object or if audio_queue is not a queue.Queue object.
+        placeholder_3: A Streamlit placeholder to display the transcript.
+        placeholder_4: A Streamlit placeholder to display the
+            location of the transcript file.
     """
-    if not isinstance(stop_event, threading.Event):
-        raise TypeError("stop_event must be a threading.Event object.")
-    if not isinstance(audio_queue, queue.Queue):
-        raise TypeError("audio_queue must be a queue.Queue object.")
-    FORMAT = pyaudio.paInt32
-
-    audio = pyaudio.PyAudio()
-    stream = audio.open(format=FORMAT, channels=channels,
-                        rate=rate, input=True,
-                        frames_per_buffer=chunk)
-    st.write("Recording... Press 'Stop Recording' button to stop.")
-
-    while not stop_event.is_set():
-        data = stream.read(chunk)
-        audio_queue.put(data)
-
-    st.write("Finished recording")
-
-    stream.stop_stream()
-    stream.close()
-    audio.terminate()
-
-    with wave.open(filename, 'wb') as wf:
-        wf.setnchannels(channels)
-        wf.setsampwidth(audio.get_sample_size(FORMAT))
-        wf.setframerate(rate)
-        wf.writeframes(b''.join(list(audio_queue.queue)))
-    pyautogui.hotkey("ctrl", "F5")
-
-
-
-def handle_stop_recording() -> \
-        None:
-    """
-    Stops the recording process by setting the stop event.
-
-    Args:
-
-    Raises:
-        TypeError: If stop_event is not None and is not a threading.Event object.
-    """
-    if st.session_state.stop_event:
-        if not isinstance(st.session_state.stop_event, threading.Event):
-            raise TypeError("stop_event must be a threading.Event object.")
-    else:
-        stop_event = threading.Event()
-        st.session_state.stop_event = stop_event
-    st.session_state.stop_event.set()
-
-
-def handle_transcribe(placeholder_1) -> None:
-    """
-    If transcribe_button is True, transcribe the audio in source_lang_audio_filename and display the result.
-
-    Args:
-        placeholder_1: A Streamlit placeholder to display the transcription.
-
-    Raises:
-        ValueError: If transcribe_button is not a boolean value.
-        TypeError: If placeholder_1 is not a Streamlit placeholder.
-    """
-    if not hasattr(placeholder_1, "empty") or not hasattr(placeholder_1,
-                                                          "success"):
-        raise TypeError("placeholder_1 must be a Streamlit placeholder")
-
-    transcription = transcribe_audio()
-    st.session_state.transcription = transcription
-    with placeholder_1:
+    check_file_exists(st.session_state.source_lang_audio_filename,
+                      "source_lang_audio_filename")
+    st.session_state.transcription = transcribe_audio()
+    with placeholder_3:
         st.success(f"Transcription:\n{st.session_state.transcription}")
     try:
         with open(st.session_state.transcript_filename, "w") as f:
             f.write(st.session_state.transcription)
     except Exception as e:
         print(f"Error saving transcript file: {e.args}")
+    placeholder_4.write(
+        f"Transcription saved to "
+        f"{st.session_state.transcript_filename}")
+
 
 def transcribe_audio() -> str:
-    """Transcribes an audio file using OpenAI's API.
+    """Transcribe an audio file using OpenAI's Whisper API.
 
     Args:
 
@@ -346,32 +285,27 @@ def transcribe_audio() -> str:
         return ""
 
 
-def handle_translate(target_lang: str, placeholder_1, placeholder_2) -> None:
+def handle_translate(target_lang: str, placeholder_5, placeholder_6,
+                     placeholder_7) -> None:
     """
-    If translate_button is True, translate the transcription in the Streamlit session state
-    to the specified target language and display the results.
+    If translate_button is clicked, translate the transcription in the
+    Streamlit session state to the specified target language and display the results.
 
     Args:
         target_lang (str): The target language for translation.
-        placeholder_1: A Streamlit placeholder to display the transcription.
-        placeholder_2: A Streamlit placeholder to display the translation.
+        placeholder_5: A Streamlit placeholder to display the transcript text.
+        placeholder_6: A Streamlit placeholder to display the translation text.
+        placeholder_7: A Streamlit placeholder to display the
+        location of the translation file.
 
     Raises:
-        ValueError: If translate_button is not a boolean value or if target_lang is not a string.
-        TypeError: If placeholder_1 or placeholder_2 is not a Streamlit placeholder.
+        ValueError: If target_lang is not a string.
     """
     if not isinstance(target_lang, str):
         raise ValueError("target_lang must be a string")
 
-    if not hasattr(placeholder_1, "empty") or not hasattr(placeholder_1,
-                                                          "success"):
-        raise TypeError("placeholder_1 must be a Streamlit placeholder")
-
-    if not hasattr(placeholder_2, "empty") or not hasattr(placeholder_2,
-                                                          "info"):
-        raise TypeError("placeholder_2 must be a Streamlit placeholder")
-
-    transcript_filename = st.session_state.get("transcript_filename")
+    check_file_exists(st.session_state.transcript_filename,
+                      "transcript_filename")
     try:
         with open(st.session_state.transcript_filename) as f:
             transcription = f.read()
@@ -384,25 +318,33 @@ def handle_translate(target_lang: str, placeholder_1, placeholder_2) -> None:
         return
     translation = translate_text(target_lang)
     st.session_state["translation"] = translation
-    with placeholder_1:
+    with placeholder_5:
         st.success(f"Transcription:\n{transcription}")
-    with placeholder_2:
+    with placeholder_6:
         st.info(f"Translation:\n{translation}")
     try:
         with open(st.session_state.translation_filename, "w") as f:
             f.write(translation)
+        placeholder_7.write(
+            f"Translation saved to "
+            f"{st.session_state.translation_filename}")
     except Exception as e:
         print(f"Error saving translation file: {e.args}")
 
+
 def translate_text(target_lang: str) -> str:
     """
-    Translates the given text into the specified target language using OpenAI's GPT-3 API.
+    Translates the given text into the specified target language using
+    OpenAI's GPT-3 API.
 
     Args:
         target_lang (str): The ISO 639-1 language code for the target language.
 
     Returns:
         str: The translated text.
+
+    Raises:
+        ValueError if target_lang not chosen
     """
     # Validate input
     if not target_lang:
@@ -440,54 +382,48 @@ def translate_text(target_lang: str) -> str:
         return ""
 
 
-def handle_read_translation(placeholder_1,
-                            placeholder_2) -> None:
+def handle_read_translation(placeholder_8,
+                            placeholder_9) -> None:
     """
-    If read_translation_button is True, read the translation in the Streamlit session state
-    out loud and display the transcription and translation.
+    If read_translation_button is clicked, read out the translation aloud and
+    display both the transcription (source language text) and its translation.
 
     Args:
-        placeholder_1: A Streamlit placeholder to display the transcription.
-        placeholder_2: A Streamlit placeholder to display the translation.
+        placeholder_8: A Streamlit placeholder to display the transcription.
+        placeholder_9: A Streamlit placeholder to display the translation.
 
     Raises:
-        ValueError: If read_translation_button is not a boolean value.
-        TypeError: If placeholder_1 or placeholder_2 is not a Streamlit placeholder.
-        KeyError: If transcription or translation is not available in the Streamlit session state.
+        KeyError: If transcription or translation filenames not available
+        in the Streamlit session state.
     """
-    if not hasattr(placeholder_1, "empty") or not hasattr(placeholder_1,
-                                                          "success"):
-        raise TypeError("placeholder_1 must be a Streamlit placeholder")
-
-    if not hasattr(placeholder_2, "empty") or not hasattr(placeholder_2,
-                                                          "info"):
-        raise TypeError("placeholder_2 must be a Streamlit placeholder")
-
     transcription = st.session_state.get("transcription")
-    if transcription is None:
-        raise KeyError(
-            "Transcription not available in the Streamlit session state")
+    check_file_exists(st.session_state.translation_filename,
+                      "translation_filename")
     translation = st.session_state.get("translation")
-    if translation is None:
-        raise KeyError(
-            "Translation not available in the Streamlit session state")
-    read_the_translation()
-    with placeholder_1:
-        st.success(f"Transcription:\n{transcription}")
-    with placeholder_2:
+    with placeholder_8:
         st.info(f"Translation:\n{translation}")
+    if not transcription or not translation:
+        raise KeyError("The transcript_filename or translation_filename are "
+                       "absent or empty.")
+    read_the_translation()
+    placeholder_9.write(
+        f"Target language audio file saved to "
+        f"{st.session_state.target_lang_audio_filename}")
+
 
 def read_the_translation() -> None:
     """
-    Converts the translated text to speech and plays the audio file.
+    Converts the translated text to speech and plays the resulting audio file
+    using Google gtts.
 
-    Returns:
-        None.
+    Raises:
+        ValueError if the translation does not exist or if the target_lang not
+        chosen
     """
     if not st.session_state.translation_filename:
         raise ValueError("A file with the text to be read must exist")
     if not st.session_state.target_lang:
-        raise ValueError("'target_lang' must be chosen.")
+        raise ValueError("The 'target_lang' must be chosen.")
 
     # Generate speech from translated text
     try:
@@ -517,30 +453,6 @@ def read_the_translation() -> None:
         # Handle file play errors
         print(f"Error playing audio file: {e}")
         return None
-
-
-def refresh_page() -> None:
-    """
-    Refreshes the current web page by simulating the "CTRL + R" keyboard shortcut.
-
-    Raises:
-        pyautogui.FailSafeException: If the mouse is moved to the upper-left corner of the screen
-            during the execution of this function, a `pyautogui.FailSafeException` is raised to
-            prevent accidental execution of the function.
-    """
-    try:
-        # Send the "CTRL + R" keyboard shortcut
-        pyautogui.hotkey('ctrl', 'r')
-    except pyautogui.FailSafeException:
-        # If the mouse is moved to the upper-left corner of the screen during the execution of
-        # this function, a `pyautogui.FailSafeException` is raised to prevent accidental
-        # execution of the function.
-        print(
-            "Aborting refresh: mouse is in the upper-left corner of the screen")
-        return
-
-    # Wait for a short time to allow the page to refresh
-    time.sleep(1)
 
 
 def exit_app():
@@ -581,4 +493,8 @@ def exit_app():
 
 
 if __name__ == "__main__":
+    # create a listener to capture keyboard input
+    listener = keyboard.Listener(on_press=on_press)
+    listener.recording = False
+    listener.start()
     main()
