@@ -36,14 +36,14 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version="0.1.0",  # Required
+    version="0.2.0",  # Required
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description="Speech2Speech is a Python package that performs vocal  "
-                "recognition of your speech, followed by translation to a "
-                "target language  of your choice, which is then read out loud "
-                "by a high-quality voice.",  # Optional
+    description="Speech2Speech is a Python package that performs speech  "
+                "recognition of your voice, followed by translation to a "
+                "target language  of your choice, which is then read out "
+                "aloud by a high-quality voice.",  # Optional
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
     #
@@ -83,18 +83,16 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         # Indicate who your project is intended for
-        "Intended Audience :: Developers",
+        "Intended Audience :: End Users/Desktop",
         "Topic :: Speech Recognition :: Machine Translation :: Text to Speech",
         # Pick your license as you wish
-        "License :: OSI Approved :: MIT License",
+        "License :: Free for non-commercial use",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate you support Python 3. These classifiers are *not*
         # checked by 'pip install'. See instead 'python_requires' below.
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3 :: Only",
     ],
@@ -105,7 +103,7 @@ setup(
     # by commas, to be used to assist searching for the distribution in a
     # larger catalog.
     keywords="speech_recognition, machine_translation, text_to_speech, "
-             "setuptools, development, python-3, chat-gpt, whisper-ai, "
+             "python-3, chat-gpt, whisper-ai, "
              "pyaudio, gtts",  # Optional
     # When your source code is in a subdirectory under the project root, e.g.
     # `src/`, it is necessary to specify the `package_dir` argument.
@@ -124,7 +122,7 @@ setup(
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. See
     # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
-    python_requires=">=3.7, <4",
+    python_requires=">=3, <4",
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
     # installed, so they must be valid existing projects.
