@@ -1,5 +1,6 @@
 # Speech2Speech
-<img src="speech2speech/imgs/speech2speech.png" alt="image of main screen">
+<img src="speech2speech/imgs/speech2speech.png" alt="image of main screen" 
+height="340" width="140">
 The Speech2Speech Python package is a Streamlit Web application that **models 
 all phases of speech-to-speech translation**, including:
 - recording speech in the source language, 
