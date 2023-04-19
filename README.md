@@ -57,13 +57,35 @@ In order to launch it locally follow these steps:
 
 1. Make sure the microphone and speakers of your device are on.
 
-2. Navigate to the directory where your Speech2Speech program is located 
-using the cd command.
+2. Enter the following URL in your browser to download the project as a zip 
+   file:
+- `https://github.com/rcdalj/speech2speech/archive/refs/heads/master.zip`
+3. Extract the contents of the zip file, thereby creating a local copy of 
+   the project directory
+4. In the terminal or command prompt, place yourself in the root of the 
+   local copy of the project directory (where you find, namely, the requirements.txt file)
+- `cd <full name of root of local project directory>`
+3. Create a virtual environment:
 
-3. Type the following command in the terminal to launch Speech2Speech:
+3.1. On Mac and Linux:
+- `python3 -m pip install --user virtualenv`
+- `python3 -m venv venv`
 
+3.2. On Windows:
+- `py -m pip install --user virtualenv`
+- `py -m venv env`
+4. Activate the virtual environment:
 
-   `streamlit run speech2speech.py`
+4.1. On Mac and Linux
+- `source venv/bin/activate`
+
+4.2. On Windows:
+- `.\env\Scripts\activate`
+5. Install project dependencies:
+- `pip install -r requirements.txt`
+6. Type the following commands in the terminal to launch Speech2Speech:
+- `cd speech2speech`
+- `streamlit run speech2speech.py`
 
 
 Workflow
