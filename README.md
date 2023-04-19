@@ -10,7 +10,7 @@ all phases of speech-to-speech translation**, including:
 - converting the translated text to speech in the target language. 
 
 As a web application, it can be accessed through any web browser and is 
-compatible with Linux, Mac, and Windows operating systems.
+**compatible with Linux, Mac, and Windows operating systems**.
 
 Speech2Speech is currently **configured to translate to and from 13 different 
 languages**. Although the quality of  translation may vary depending on the 
@@ -20,16 +20,17 @@ configured for many more than just these languages** (specified in the config.
 ini file), as long as they are supported by Whisper AI, Chat-GPT and gtts, 
 the packages on which it depends.
 
-The package **automatically detects the source language used in speech**. The 
-user therefore is not asked to specify it.
 
 Speech2Speech is designed to be accessible to a **broad audience**. One of 
-the key advantages of Speech2Speech is that it's incredibly easy to use. 
-There is **no need to train the software or the user before actually using 
+the key advantages of Speech2Speech is that it's incredibly easy to use:
+- The package **automatically detects the source language used in speech**. The 
+user therefore is not asked to specify it.
+- There is **no need to train the software or the user before actually using 
 the product**. It works well straight out of the box with no further tuning 
-or configuration required. This makes it a highly accessible tool that anyone 
-can use, regardless of their technical expertise or experience with speech  
-recognition and machine translation technology. 
+or configuration required. 
+This makes it a highly accessible tool that anyone can use, regardless of 
+their technical expertise or experience with speech recognition and machine 
+translation technology. 
 
 It is also hoped that this technology could be leveraged to develop 
 products specifically designed for **persons with visual impairments**. It 
@@ -39,26 +40,23 @@ intended recipients.
 
 Each phase of the workflow creates a file, whose name is defined in the 
 config.ini file. Advanced users can **start and/or interrupt the workflow 
-wherever they need** by inserting their own files in the speech2speech/data 
+wherever they need** by inserting their own files in the `speech2speech/data` 
 subdirectory and adapting the config.ini file to refer to them. 
 
 Prerequisites
 -----------------------------------------------------------------------------
-You need to [get an OpenAI API key](https://www.howtogeek.com/885918/how-to-get-an-openai-api-key/#autotoc_anchor_0) in order to use this app
+You need to [get an OpenAI API key](https://www.howtogeek.com/885918/how-to-get-an-openai-api-key/#autotoc_anchor_0) in order to use this app.
    
-Speech2Speech installation
+Speech2Speech local installation
 --------------------------
-To install Speech2Speech locally, open your terminal and run the following 
+Speech2Speech is a Web App and you just need to enter its URL in the 
+browser to launch it. If, however, you also want to run it locally (most 
+probably in order to change or improve it),  run the following 
 command:
 
     pip install speech2speech
 
-Launch Speech2Speech
-------------------------------------
-Speech2Speech is a web app and you just need to enter its URL in the 
-browser to launch it. If, however, you also want to run it locally (most 
-probably in order to change or improve it), 
-follow these steps:
+In order to launch it locally follow these steps:
 
 1. Make sure the microphone and speakers of your device are on.
 
@@ -100,5 +98,5 @@ What to do if you encounter issues
 -------------------------------
 
 If Chat-GPT or Speech2Speech get stuck or you encounter any issues, simply 
-refresh the browser page. ChatGPT may have lots of users at certain times 
+refresh the browser page. ChatGPT may, however, have lots of users at certain times 
 of the day and be poorly responsive for a while.
