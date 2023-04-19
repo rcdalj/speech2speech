@@ -129,7 +129,7 @@ def main() -> None:
                              use_container_width=True)
             if help:
                 try:
-                    with open("../browser_help.md", 'r') as f:
+                    with open("browser_help.md", 'r') as f:
                         content = f.read()
                     html = markdown.markdown(content)
                     st.markdown(html, unsafe_allow_html=True)
