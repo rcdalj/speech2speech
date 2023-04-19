@@ -7,3 +7,4 @@
 /speech2speech/data/logs.log
 /.pytest_cache/
 /tests/
+/speech2speech/.password

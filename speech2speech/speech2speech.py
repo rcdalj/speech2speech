@@ -14,6 +14,7 @@ from gtts import gTTS
 from pydub import AudioSegment
 from pydub.playback import play
 from pynput import keyboard
+import markdown
 
 
 # define a function to handle keyboard input
@@ -24,27 +25,6 @@ def on_press(key):
     elif key == keyboard.Key.e and listener.recording:
         listener.recording = False
         return False
-
-
-def get_api_key() -> str:
-    """
-    Read the OpenAI API key from the environment and return it.
-
-    Returns:
-        str: The OpenAI API key.
-
-    Raises:
-        KeyError: If the API key environment variable is not found.
-        ValueError: If the API key is an empty string.
-    """
-    api_key = os.environ.get('OPENAI_API_KEY')
-    if not api_key:
-        raise KeyError("OPENAI_API_KEY environment variable not set")
-
-    if not api_key.strip():
-        raise ValueError("OPENAI_API_KEY is empty")
-
-    return api_key.strip()
 
 
 def check_file_exists(filepath, config_filename):
@@ -63,21 +43,46 @@ def check_file_exists(filepath, config_filename):
                                 f"{filepath}) does not exist")
 
 
+
 # Main function
 def main() -> None:
     """
     Main function to run the Speech2Speech app.
     """
     try:
-        openai.api_key = get_api_key()
         st.set_page_config(page_title="Speech2Speech")
         st.header("Speech2Speech")
+        st.write("Speech2Speech is a Streamlit Web application that models all "
+                 "phases of speech-to-speech translation, including recording "
+                 "speech, speech-to-text, translation, "
+                 "and translation-to-speech. "
+                 "It can translate to and from 13 different languages and can "
+                 "be configured for more, depending on the packages it depends "
+                 "on. It automatically detects the source language used in "
+                 "speech, making it easy for users with no technical expertise. "
+                 "Speech2Speech creates a file for each phase of the workflow, "
+                 "and advanced users can insert their own files in the data "
+                 "subdirectory and modify the config.ini file. Overall, it is "
+                 "a highly accessible tool for speech-to-speech translation. "
+                 "**You need to [get an OpenAI API key]("
+                 "https://www.howtogeek.com/885918/how-to-get-an-openai-api"
+                 "-key/#autotoc_anchor_0) in order to use this app**. For "
+                 "more info, please visit the [speech2speech Gihub site]("
+                 "https://github.com/rcdalj/speech2speech).")
+
         read_config()
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns([1,2])
         st.session_state.disabled = False
         st.session_state.recording_stopped = False
 
         with col1:
+            user_secret = st.text_input(
+                label=":blue[OpenAI API Key]",
+                placeholder="Paste your openAI API key, sk-",
+                type="password",
+            )
+            if user_secret:
+                openai.api_key = user_secret
             record_button = st.button(
                 "Record Audio",
                 key="record",
@@ -119,13 +124,25 @@ def main() -> None:
             if st.button("Exit App", use_container_width=True):
                 st.write("App is now closing ...")
                 exit_app()
+        with col2:
+            help = st.button("Help",
+                             use_container_width=True)
+            if help:
+                try:
+                    with open("../browser_help.md", 'r') as f:
+                        content = f.read()
+                    html = markdown.markdown(content)
+                    st.markdown(html, unsafe_allow_html=True)
+                except FileNotFoundError:
+                    st.error("File README.md not found.")
 
         if record_button:
-            placeholder_1.write("Recording... Press CTRL+E to stop recording.")
+            placeholder_1.warning("Recording... Press CTRL+E to stop "
+                                 "recording.")
             stop_event = threading.Event()
             st.session_state.stop_event = stop_event
             handle_record()
-            placeholder_1.write(f"Recording saved to"
+            placeholder_1.warning(f"Recording saved to"
                                 f" {st.session_state.source_lang_audio_filename}")
         if transcribe_button:
             handle_transcribe(placeholder_3, placeholder_4)
@@ -260,7 +277,7 @@ def handle_transcribe(placeholder_3, placeholder_4) -> None:
             f.write(st.session_state.transcription)
     except Exception as e:
         print(f"Error saving transcript file: {e.args}")
-    placeholder_4.write(
+    placeholder_4.warning(
         f"Transcription saved to "
         f"{st.session_state.transcript_filename}")
 
@@ -325,7 +342,7 @@ def handle_translate(target_lang: str, placeholder_5, placeholder_6,
     try:
         with open(st.session_state.translation_filename, "w") as f:
             f.write(translation)
-        placeholder_7.write(
+        placeholder_7.warning(
             f"Translation saved to "
             f"{st.session_state.translation_filename}")
     except Exception as e:
@@ -406,7 +423,7 @@ def handle_read_translation(placeholder_8,
         raise KeyError("The transcript_filename or translation_filename are "
                        "absent or empty.")
     read_the_translation()
-    placeholder_9.write(
+    placeholder_9.warning(
         f"Target language audio file saved to "
         f"{st.session_state.target_lang_audio_filename}")
 
