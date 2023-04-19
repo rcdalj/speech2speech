@@ -49,10 +49,7 @@ You need to [get an OpenAI API key](https://www.howtogeek.com/885918/how-to-get-
    
 Speech2Speech local installation
 --------------------------
-Speech2Speech is a Web App and you just need to enter its URL in the 
-browser to launch it. If, however, you also want to run it locally (most 
-probably in order to change or improve it),  run the following 
-command:
+Run the following command:
 
     pip install speech2speech
 
